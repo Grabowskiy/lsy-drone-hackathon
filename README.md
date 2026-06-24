@@ -50,9 +50,10 @@ python scripts/evaluate.py --controller <team>.py                        # your 
 
 ## Real flight & submit
 
-You deploy from **one central machine** in a booked window (you never connect to the drone
-directly), and **two drones are shared** across teams. You can also put up gates to test your own
-layouts. See **[REAL_FLIGHT.md](REAL_FLIGHT.md)** for how deployment works, how to place gates, and
+You deploy from a **flight-station machine (one per drone)** in a booked window — you run your
+controller there, connected to the drone for you (you don't touch the drone directly). **Two
+drones are shared** across teams, so you rotate on windows. You can also put up gates to test your
+own layouts. See **[REAL_FLIGHT.md](REAL_FLIGHT.md)** for how deployment works, how to place gates, and
 how to put their exact coordinates into a config. Bring your final controller file to your demo
 slot — the organizers run it for the judges. Judging + rules are in [CHALLENGE.md](CHALLENGE.md).
 

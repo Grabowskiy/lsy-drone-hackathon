@@ -9,11 +9,13 @@ the workshop — attendance is required before you fly.)
 
 ## How deployment works
 
-- **You never connect to the drone directly.** There is **one central deployment computer** (Linux)
-  wired to the drone via the Crazyradio. In your **booked window**, you run *your* controller on
-  that machine; it talks to the drone for you.
-- **Two drones are shared by all teams.** You rotate on deployment windows; while one flies, the
-  other charges. Respect the schedule and battery rotation.
+- **Each drone has its own deployment machine** (a flight station — Linux + Crazyradio). In your
+  **booked window**, you run *your* controller on that station's machine; it's connected to the
+  drone for you — you don't fiddle with the drone directly.
+- **Two drones are shared by all teams**, so there are **two stations**. You rotate on deployment
+  windows; while one drone flies, the other charges. Respect the schedule and battery rotation.
+- How you access the station's machine (on-site at the station, possibly via SSH) will be confirmed
+  at the event.
 - A **safety officer is always present** and everyone keeps a **hand on the emergency stop**
   (`Ctrl-C` stops the drone). See [Safety](#safety-summary).
 
