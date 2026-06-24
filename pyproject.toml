@@ -44,7 +44,7 @@ deploy = [
     "drone-estimators",
 ]
 # option[rl]: train rl policy
-rl = ["torch == 2.8.0", "wandb"]
+rl = ["torch == 2.8.0", "wandb", "stable-baselines3", "tensorboard"]
 # option[gamepad]: use a gamepad as input for your drone
 gamepad = ["pygame"]
 
