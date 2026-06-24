@@ -13,7 +13,12 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import scipy
-from acados_template import AcadosModel, AcadosOcp, AcadosOcpSolver
+from acados_template import (
+    AcadosModel,
+    AcadosOcp,
+    AcadosOcpSolver,
+    ocp_get_default_cmake_builder,
+)
 from drone_models.core import load_params
 from drone_models.so_rpy import symbolic_dynamics_euler
 from drone_models.utils.rotation import ang_vel2rpy_rates
@@ -24,6 +29,15 @@ from lsy_drone_racing.control import Controller
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
+
+import platform
+from pathlib import Path
+
+def make_windows_cmake_builder():
+    cmake_builder = ocp_get_default_cmake_builder()
+    cmake_builder.generator = "Visual Studio 17 2022"
+    cmake_builder.host = "x64"
+    return cmake_builder
 
 
 def create_acados_model(parameters: dict) -> AcadosModel:
@@ -155,12 +169,20 @@ def create_ocp_solver(
     # set prediction horizon
     ocp.solver_options.tf = Tf
 
+    # Needed for native Windows/MSVC acados builds.
+    # Adjust if your acados install is somewhere else.
+    ocp.code_gen_opts.acados_include_path = r"C:/tools/acados/include"
+    ocp.code_gen_opts.acados_lib_path = r"C:/tools/acados/lib"
+
+    cmake_builder = make_windows_cmake_builder() if platform.system() == "Windows" else None
+
     acados_ocp_solver = AcadosOcpSolver(
         ocp,
         json_file="c_generated_code/lsy_example_mpc.json",
-        verbose=verbose,
+        verbose=True,
         build=True,
         generate=True,
+        cmake_builder=cmake_builder,
     )
 
     return acados_ocp_solver, ocp
