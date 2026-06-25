@@ -40,29 +40,60 @@ from typing import TYPE_CHECKING, Any
 
 os.environ.setdefault("SCIPY_ARRAY_API", "1")
 
-# Python 3.13 broke warp's array[T] generic annotation syntax. Patch before
-# anything imports mujoco.mjx (which transitively imports mujoco_warp types).
-try:
-    import warp as wp
+# Python 3.13 tightened __class_getitem__ for Generic subclasses, breaking
+# warp 1.6.2's `wp.array[int]` annotation syntax inside mujoco_warp @wp.struct
+# decorators. We patch the mujoco mjx warp __init__.py except clause at import
+# time so TypeError is treated as a graceful "warp backend unavailable" rather
+# than a fatal crash. This lets the JAX backend (which we use) load normally.
+def _patch_mujoco_warp_compat() -> None:
+    """Broaden the mujoco.mjx.warp exception handler to swallow Python 3.13 TypeErrors."""
+    import importlib.util
+    import importlib.abc
+    import sys
 
-    # wp.array is a class — add __class_getitem__ so wp.array[int] works.
-    wp.array.__class_getitem__ = classmethod(lambda cls, *a: cls)
+    _WARP_INIT = "mujoco.mjx.warp"
 
-    # wp.array2d / wp.array3d are functions — wrap them in a subscriptable proxy.
-    class _SubscriptableFn:
-        """Wraps a callable and returns self when subscripted (e.g. fn[int])."""
-        def __init__(self, fn):
-            self._fn = fn
-            self.__name__ = getattr(fn, "__name__", repr(fn))
-        def __call__(self, *args, **kwargs):
-            return self._fn(*args, **kwargs)
-        def __getitem__(self, key):
-            return self  # annotation uses only the subscript result as metadata
+    class _MujocoWarpFinder(importlib.abc.MetaPathFinder):
+        """Intercept mujoco.mjx.warp import and patch its source on the fly."""
 
-    wp.array2d = _SubscriptableFn(wp.array2d)
-    wp.array3d = _SubscriptableFn(wp.array3d)
-except Exception:
-    pass
+        def find_spec(self, fullname, path, target=None):
+            if fullname != _WARP_INIT:
+                return None
+            # Let the real finder locate the file first.
+            for finder in sys.meta_path:
+                if finder is self:
+                    continue
+                spec = finder.find_spec(fullname, path, target)
+                if spec is not None and spec.origin:
+                    return _PatchedLoader.wrap(spec)
+            return None
+
+    class _PatchedLoader(importlib.abc.Loader):
+        def __init__(self, original_loader, origin):
+            self._loader = original_loader
+            self._origin = origin
+
+        @staticmethod
+        def wrap(spec):
+            patched = _PatchedLoader(spec.loader, spec.origin)
+            spec.loader = patched
+            return spec
+
+        def create_module(self, spec):
+            return self._loader.create_module(spec) if hasattr(self._loader, "create_module") else None
+
+        def exec_module(self, module):
+            with open(self._origin, "r") as f:
+                src = f.read()
+            src = src.replace(
+                "except (ImportError, RuntimeError) as e:",
+                "except (ImportError, RuntimeError, TypeError, AttributeError) as e:",
+            )
+            exec(compile(src, self._origin, "exec"), module.__dict__)
+
+    sys.meta_path.insert(0, _MujocoWarpFinder())
+
+_patch_mujoco_warp_compat()
 
 import fire
 import numpy as np

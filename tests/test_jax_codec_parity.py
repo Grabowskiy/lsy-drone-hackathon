@@ -14,23 +14,9 @@ from pathlib import Path
 ROOT = Path(__file__).parents[1]
 sys.path.insert(0, str(ROOT))
 
-# Python 3.13 broke warp's array[T] generic syntax; patch before mujoco imports.
-try:
-    import warp as wp
-    wp.array.__class_getitem__ = classmethod(lambda cls, *a: cls)
-
-    class _SubscriptableFn:
-        def __init__(self, fn):
-            self._fn = fn
-        def __call__(self, *args, **kwargs):
-            return self._fn(*args, **kwargs)
-        def __getitem__(self, key):
-            return self
-
-    wp.array2d = _SubscriptableFn(wp.array2d)
-    wp.array3d = _SubscriptableFn(wp.array3d)
-except Exception:
-    pass
+# lsy_drone_racing.__init__ applies the Python 3.13/warp compat patch before
+# any mujoco imports. Import it first to ensure the patch is in place.
+import lsy_drone_racing  # noqa: F401
 
 
 def _make_fake_obs(rng: np.random.Generator, n_gates: int = 4, n_obstacles: int = 4):
