@@ -17,6 +17,9 @@ c_generated_code/
 # local editor / type-checker config (basedpyright interpreter)
 pyrightconfig.json
 
+# my own saved RL models (keep teammates' models tracked)
+/lsy_drone_racing/control/sb3_state_race*.zip
+
 # training run artifacts (checkpoints, eval logs, tensorboard events)
 runs/
 
