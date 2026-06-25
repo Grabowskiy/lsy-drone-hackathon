@@ -16,8 +16,11 @@ def _patch_mujoco_warp_py313() -> None:
         def find_spec(self, fullname, path, target=None):
             if fullname != _TARGET:
                 return None
+            # Skip ALL instances of our finder to prevent recursion between
+            # multiple installed copies of _Finder (e.g. from __init__ and
+            # from train_noguide_jax.py both installing one).
             for finder in sys.meta_path:
-                if finder is self:
+                if isinstance(finder, _Finder):
                     continue
                 spec = finder.find_spec(fullname, path, target)
                 if spec is not None and getattr(spec, "origin", None):

@@ -40,60 +40,8 @@ from typing import TYPE_CHECKING, Any
 
 os.environ.setdefault("SCIPY_ARRAY_API", "1")
 
-# Python 3.13 tightened __class_getitem__ for Generic subclasses, breaking
-# warp 1.6.2's `wp.array[int]` annotation syntax inside mujoco_warp @wp.struct
-# decorators. We patch the mujoco mjx warp __init__.py except clause at import
-# time so TypeError is treated as a graceful "warp backend unavailable" rather
-# than a fatal crash. This lets the JAX backend (which we use) load normally.
-def _patch_mujoco_warp_compat() -> None:
-    """Broaden the mujoco.mjx.warp exception handler to swallow Python 3.13 TypeErrors."""
-    import importlib.util
-    import importlib.abc
-    import sys
-
-    _WARP_INIT = "mujoco.mjx.warp"
-
-    class _MujocoWarpFinder(importlib.abc.MetaPathFinder):
-        """Intercept mujoco.mjx.warp import and patch its source on the fly."""
-
-        def find_spec(self, fullname, path, target=None):
-            if fullname != _WARP_INIT:
-                return None
-            # Let the real finder locate the file first.
-            for finder in sys.meta_path:
-                if finder is self:
-                    continue
-                spec = finder.find_spec(fullname, path, target)
-                if spec is not None and spec.origin:
-                    return _PatchedLoader.wrap(spec)
-            return None
-
-    class _PatchedLoader(importlib.abc.Loader):
-        def __init__(self, original_loader, origin):
-            self._loader = original_loader
-            self._origin = origin
-
-        @staticmethod
-        def wrap(spec):
-            patched = _PatchedLoader(spec.loader, spec.origin)
-            spec.loader = patched
-            return spec
-
-        def create_module(self, spec):
-            return self._loader.create_module(spec) if hasattr(self._loader, "create_module") else None
-
-        def exec_module(self, module):
-            with open(self._origin, "r") as f:
-                src = f.read()
-            src = src.replace(
-                "except (ImportError, RuntimeError) as e:",
-                "except (ImportError, RuntimeError, TypeError, AttributeError) as e:",
-            )
-            exec(compile(src, self._origin, "exec"), module.__dict__)
-
-    sys.meta_path.insert(0, _MujocoWarpFinder())
-
-_patch_mujoco_warp_compat()
+# The Python 3.13/warp compatibility patch is applied in lsy_drone_racing/__init__.py
+# via a MetaPathFinder that intercepts mujoco.mjx.warp at import time.
 
 import fire
 import numpy as np
@@ -491,12 +439,12 @@ class ActorCritic(nnx.Module):
         self.actor = MLP(obs_dim, hidden, action_dim, rngs=rngs)
         self.critic = MLP(obs_dim, hidden, 1, rngs=rngs)
         # Log std as a learnable parameter (initialised to 0 → std = 1).
-        self.log_std = nnx.Param(jnp.zeros(action_dim))
+        self.log_std = nnx.Variable(jnp.zeros(action_dim))
 
     def policy(self, obs: jnp.ndarray) -> tuple[jnp.ndarray, jnp.ndarray]:
         """Return (mean, std) for the Gaussian policy."""
         mean = self.actor(obs)
-        std = jnp.exp(self.log_std.value)
+        std = jnp.exp(self.log_std.get_value())
         return mean, std
 
     def value(self, obs: jnp.ndarray) -> jnp.ndarray:
