@@ -14,6 +14,18 @@ plots/
 c_generated_code/
 /build
 
+# local editor / type-checker config (basedpyright interpreter)
+pyrightconfig.json
+
+# my own saved RL models (keep teammates' models tracked)
+/lsy_drone_racing/control/sb3_state_race*.zip
+
+# training run artifacts (checkpoints, eval logs, tensorboard events)
+runs/
+
+# wandb run logs
+wandb/
+
 # pixi / venv environments
 .pixi/*
 !.pixi/config.toml
