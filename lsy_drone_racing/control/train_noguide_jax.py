@@ -40,6 +40,30 @@ from typing import TYPE_CHECKING, Any
 
 os.environ.setdefault("SCIPY_ARRAY_API", "1")
 
+# Python 3.13 broke warp's array[T] generic annotation syntax. Patch before
+# anything imports mujoco.mjx (which transitively imports mujoco_warp types).
+try:
+    import warp as wp
+
+    # wp.array is a class — add __class_getitem__ so wp.array[int] works.
+    wp.array.__class_getitem__ = classmethod(lambda cls, *a: cls)
+
+    # wp.array2d / wp.array3d are functions — wrap them in a subscriptable proxy.
+    class _SubscriptableFn:
+        """Wraps a callable and returns self when subscripted (e.g. fn[int])."""
+        def __init__(self, fn):
+            self._fn = fn
+            self.__name__ = getattr(fn, "__name__", repr(fn))
+        def __call__(self, *args, **kwargs):
+            return self._fn(*args, **kwargs)
+        def __getitem__(self, key):
+            return self  # annotation uses only the subscript result as metadata
+
+    wp.array2d = _SubscriptableFn(wp.array2d)
+    wp.array3d = _SubscriptableFn(wp.array3d)
+except Exception:
+    pass
+
 import fire
 import numpy as np
 from scipy.interpolate import CubicHermiteSpline

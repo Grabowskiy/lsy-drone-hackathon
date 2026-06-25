@@ -262,7 +262,7 @@ class RaceCodec:
         ).astype(np.float32)
 
 
-class EpisodeStatsCallback(BaseCallback):
+class EpisodeStatsCallback(BaseCallback if BaseCallback is not None else object):
     """Log gates passed and success rate to TensorBoard."""
 
     def __init__(self):
@@ -567,7 +567,7 @@ def _make_monitored_env(config_name: str, render: bool = False):
     return thunk
 
 
-class RenderEvalCallback(BaseCallback):
+class RenderEvalCallback(BaseCallback if BaseCallback is not None else object):
     """Continuously fly the *current* policy in a live viewer window.
 
     A separate render-enabled env lives in the main process (so the MuJoCo window actually opens).
