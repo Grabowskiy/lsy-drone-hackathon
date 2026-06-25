@@ -17,6 +17,9 @@ c_generated_code/
 # local editor / type-checker config (basedpyright interpreter)
 pyrightconfig.json
 
+# training run artifacts (checkpoints, eval logs, tensorboard events)
+runs/
+
 # wandb run logs
 wandb/
 
