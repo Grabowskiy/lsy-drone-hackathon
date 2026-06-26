@@ -1,0 +1,97 @@
+# Simulation check for the real-drone figure-eight landing controller.
+#
+# IMPORTANT:
+# - Run this only from the official flight-station computer.
+# - Confirm the assigned drone id/channel with the organizers.
+# - Edit env.track.drones.pos to match the physical start marker.
+# - Keep a hand on Ctrl-C / the hardware emergency stop.
+
+[controller]
+file = "figure8_landing_controller.py"
+
+[deploy]
+# The hackathon flight stations use the Crazyflie's Lighthouse estimate.
+lighthouse = true
+
+# Lighthouse does not measure gates/obstacles. The configured track is used.
+real_track_objects = false
+
+check_race_track = true
+check_drone_start_pos = true
+
+[[deploy.drones]]
+# Replace these values when the flight station uses another drone.
+id = 11
+channel = 80
+drone_model = "cf21B_500"
+
+# deploy.py ignores the simulator block, but keeping it allows the exact same
+# configuration to be checked in simulation before the hardware run.
+[sim]
+physics = "first_principles"
+drone_model = "cf21B_500"
+freq = 500
+attitude_freq = 500
+render = true
+camera = -1
+
+[[sim.cam_config]]
+distance = 4.0
+azimuth = 180.0
+elevation = -30.0
+lookat = [0.0, 0.0, 0.6]
+
+[env]
+id = "DroneRacing-v0"
+seed = 7
+freq = 50
+sensor_range = 0.7
+control_mode = "state"
+
+[env.track]
+randomize = false
+obstacles = []
+
+# Keep one unused virtual gate because the racing environment expects a gate.
+# It must remain away from the entire figure-eight trajectory.
+[[env.track.gates]]
+pos = [2.0, 1.0, 1.2]
+rpy = [0.0, 0.0, 0.0]
+
+[[env.track.drones]]
+# CHANGE x/y to the measured physical start marker in the Lighthouse frame.
+# z is the drone's ground/start height.
+pos = [-1.5, -0.75, 0.0]
+rpy = [0.0, 0.0, 0.0]
+vel = [0.0, 0.0, 0.0]
+ang_vel = [0.0, 0.0, 0.0]
+
+# Official flight volume. The selected figure eight must stay well inside it.
+[env.track.safety_limits]
+pos_limit_low = [-2.5, -1.5, 0.0]
+pos_limit_high = [2.5, 1.5, 2.0]
+
+[figure8]
+# Conservative first real-flight test.
+size_m = 1.2
+straight_speed_mps = 0.5
+curve_speed_mps = 0.3
+altitude_m = 0.8
+laps = 1
+
+max_acceleration_mps2 = 1.0
+takeoff_time_s = 3.0
+settle_time_s = 1.0
+finish_hold_time_s = 0.5
+
+# Controlled descent. The deployment environment stops the motors afterward.
+landing_time_s = 3.0
+landing_height_m = 0.05
+landed_hold_time_s = 0.5
+
+yaw_rad = 0.0
+geometry_samples = 4096
+
+run_label = "sim"
+log_prefix = "figure8_landing"
+output_dir = "logs/figure8_sim_to_real"

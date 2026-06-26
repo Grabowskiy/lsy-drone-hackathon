@@ -1,0 +1,92 @@
+# Real-drone figure-eight test with controlled landing.
+#
+# No track randomization, no disturbances, and no physical gates/obstacles.
+# A single dummy virtual gate is retained because the racing environment
+# currently expects at least one gate internally. The controller ignores it.
+
+[controller]
+file = "figure8_landing_controller.py"
+
+[deploy]
+lighthouse = true
+real_track_objects = false
+check_race_track = false
+check_drone_start_pos = false
+
+[[deploy.drones]]
+id = 11
+channel = 80
+drone_model = "cf21B_500"
+
+[sim]
+physics = "first_principles"
+drone_model = "cf21B_500"
+freq = 500
+attitude_freq = 500
+render = true
+camera = -1
+
+[[sim.cam_config]]
+distance = 4.0
+azimuth = 180.0
+elevation = -30.0
+lookat = [0.0, 0.0, 0.6]
+
+[env]
+id = "DroneRacing-v0"
+seed = 7
+freq = 50
+sensor_range = 0.0
+control_mode = "state"
+
+# Must exist because deploy.py accesses config.env.randomizations directly.
+# Empty means no randomization is enabled.
+[env.randomizations]
+
+[env.track]
+randomize = false
+
+# Dummy virtual gate only. Do not place a physical gate.
+# The racing environment currently assumes at least one gate exists.
+[[env.track.gates]]
+pos = [2.2, 1.2, 1.2]
+rpy = [0.0, 0.0, 0.0]
+
+# Dummy virtual obstacle only. Do not place a physical obstacle.
+# The real environment indexes obstacle positions even when the controller
+# does not use obstacles, so an empty obstacle list causes a shape error.
+[[env.track.obstacles]]
+pos = [2.3, -1.3, 1.55]
+
+[[env.track.drones]]
+pos = [-1.5, 0.75, 0.01]
+rpy = [0.0, 0.0, 0.0]
+vel = [0.0, 0.0, 0.0]
+ang_vel = [0.0, 0.0, 0.0]
+
+[env.track.safety_limits]
+pos_limit_low = [-2.5, -1.5, -0.001]
+pos_limit_high = [2.5, 1.5, 2.0]
+
+[figure8]
+size_m = 1.2
+straight_speed_mps = 0.5
+curve_speed_mps = 0.3
+altitude_m = 0.8
+laps = 1
+
+max_acceleration_mps2 = 1.0
+takeoff_time_s = 3.0
+settle_time_s = 1.0
+finish_hold_time_s = 0.5
+
+landing_time_s = 3.0
+landing_height_m = 0.05
+landed_hold_time_s = 0.5
+
+yaw_rad = 0.0
+geometry_samples = 4096
+
+run_label = "real"
+log_prefix = "figure8_landing"
+output_dir = "logs/figure8_sim_to_real"
